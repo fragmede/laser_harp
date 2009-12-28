@@ -100,16 +100,32 @@ void SetupHardware(void)
 	USB_Init();
 }
 
+uint16_t GetStatus(void)
+{
+
+		uint16_t rval = _SFR_BYTE(PORTB);
+		uint8_t portc = _SFR_BYTE(PORTC) & 0xe4;
+		//portc
+		portc |= (portc & 0x04) ? 0x010 : 0;
+		rval |= portc << 4;
+		// pins 2,5,6,7 = 1110 0100 = 0xe4
+		// portc 4 is no good (usb pwr sense)
+		return rval;
+}
+
 /** Checks for changes in the position of the board joystick, sending MIDI events to the host upon each change. */
 void CheckJoystickMovement(void)
 {
+	static uint16_t PrevButtonStatus;
 	static uint8_t PrevJoystickStatus;
 
 	uint8_t MIDICommand = 0;
 	uint8_t MIDIPitch;
 	
 	/* Get current joystick mask, XOR with previous to detect joystick changes */
+	uint16_t ButtonStatus = GetStatus();
 	uint8_t JoystickStatus  = Joystick_GetStatus();
+	
 	uint8_t JoystickChanges = (JoystickStatus ^ PrevJoystickStatus);
 		
 	/* Get board button status - if pressed use channel 10 (percussion), otherwise use channel 1 */
